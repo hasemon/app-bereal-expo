@@ -1,10 +1,45 @@
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
-
   const router = useRouter();
+    const { register } = useAuth();
+    
+    useEffect(() => {
+        router.replace("/(auth)/onboarding");
+    }, []);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await register(email, password);
+      router.push("/(auth)/login");
+    } catch (error) {
+      Alert.alert("Error", "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
@@ -18,6 +53,8 @@ export default function RegisterScreen() {
             autoComplete="email"
             autoCapitalize="none"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
           />
           <TextInput
             placeholder="Password"
@@ -25,14 +62,26 @@ export default function RegisterScreen() {
             secureTextEntry
             autoCapitalize="none"
             style={styles.input}
+            value={password}
+            onChangeText={setPassword}
           />
-          <TouchableOpacity style={styles.button}>
-            <Text>Register</Text>
+          <TouchableOpacity style={styles.button} onPress={handleRegister}>
+            {loading ? (
+              <ActivityIndicator color="white" size={24} />
+            ) : (
+              <Text>Register</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.linkButton}>
             <Text>
-              Already have an account? <Text onPress={() => router.push("/(auth)/login")} style={styles.linkText}>Login</Text>
+              Already have an account?{" "}
+              <Text
+                onPress={() => router.push("/(auth)/login")}
+                style={styles.linkText}
+              >
+                Login
+              </Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -85,4 +134,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
