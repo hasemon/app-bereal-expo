@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -10,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
+import { supabase } from "@/lib/supabase/client";
 
 export default function OnboardingScreen() {
   const [name, setName] = useState("");
@@ -35,7 +37,60 @@ export default function OnboardingScreen() {
       setAvatar(result.assets[0].uri);
     }
   };
-  const handleOnboarding = async () => {};
+
+  const takePhoto = async () => {
+    const {status} = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      alert("Sorry, we need camera permissions to make this work!");
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setAvatar(result.assets[0].uri);
+    }
+  }
+
+  const showImagePicker = () => {
+    Alert.alert(
+      "Select Image",
+      "Choose an option",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Camera", onPress: takePhoto },
+        { text: "Gallery", onPress: handleImagePicker },
+      ]
+    );
+  }
+
+  const handleOnboarding = async () => {
+    if (!name || !username) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await supabase.from("profiles").update({
+        name,
+        username,
+        avatar,
+      });
+
+      Alert.alert("Success", "Profile created successfully");
+    } catch (error) {
+      Alert.alert("Error", "Profile creation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
@@ -43,7 +98,7 @@ export default function OnboardingScreen() {
         <Text style={styles.title}>Complete your profile</Text>
         <Text style={styles.subtitle}>Add your info to continue</Text>
         <View style={styles.form}>
-          <TouchableOpacity style={styles.imageContainer} onPress={handleImagePicker}>
+          <TouchableOpacity style={styles.imageContainer} onPress={showImagePicker}>
             {avatar ? (
               <Image source={avatar} style={styles.image} contentFit="cover" transition={200} />
             ) : (
