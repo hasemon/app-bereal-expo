@@ -15,10 +15,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function RegisterScreen() {
   const router = useRouter();
     const { register } = useAuth();
-    
-    useEffect(() => {
-        router.replace("/(auth)/onboarding");
-    }, []);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +29,7 @@ export default function RegisterScreen() {
     try {
       setLoading(true);
       await register(email, password);
-      router.push("/(auth)/login");
+      router.push("/(auth)/onboarding");
     } catch (error) {
       Alert.alert("Error", "Registration failed");
     } finally {
