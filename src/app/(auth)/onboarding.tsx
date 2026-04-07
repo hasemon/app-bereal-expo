@@ -1,3 +1,9 @@
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase/client";
+import { uploadAvatar } from "@/lib/supabase/storage";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -9,18 +15,19 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
-import { Image } from "expo-image";
-import { supabase } from "@/lib/supabase/client";
 
 export default function OnboardingScreen() {
+  const { user, updateUser } = useAuth();
+
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const router = useRouter();
+
   const handleImagePicker = async () => {
-    const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       alert("Sorry, we need camera roll permissions to make this work!");
       return;
@@ -39,7 +46,7 @@ export default function OnboardingScreen() {
   };
 
   const takePhoto = async () => {
-    const {status} = await ImagePicker.requestCameraPermissionsAsync();
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       alert("Sorry, we need camera permissions to make this work!");
       return;
@@ -55,21 +62,22 @@ export default function OnboardingScreen() {
     if (!result.canceled) {
       setAvatar(result.assets[0].uri);
     }
-  }
+  };
 
   const showImagePicker = () => {
-    Alert.alert(
-      "Select Image",
-      "Choose an option",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Camera", onPress: takePhoto },
-        { text: "Gallery", onPress: handleImagePicker },
-      ]
-    );
-  }
+    Alert.alert("Select Image", "Choose an option", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Camera", onPress: takePhoto },
+      { text: "Gallery", onPress: handleImagePicker },
+    ]);
+  };
 
   const handleOnboarding = async () => {
+    if (!user) {
+      Alert.alert("Error", "User is not authenticated!");
+      return;
+    }
+
     if (!name || !username) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -83,6 +91,26 @@ export default function OnboardingScreen() {
         username,
         avatar,
       });
+
+      let avatarUrl: string | undefined;
+
+      if (avatar) {
+        try {
+          avatarUrl = await uploadAvatar(user.id, avatar);
+        } catch (error) {
+          Alert.alert("Error", "Profile creation failed");
+          console.log("Error uploading avatar:", error);
+        }
+      }
+
+      await updateUser({
+        name,
+        username,
+        avatar: avatarUrl,
+        onboardingCompleted: true,
+      });
+
+      router.replace("/(tabs)");
 
       Alert.alert("Success", "Profile created successfully");
     } catch (error) {
@@ -98,9 +126,17 @@ export default function OnboardingScreen() {
         <Text style={styles.title}>Complete your profile</Text>
         <Text style={styles.subtitle}>Add your info to continue</Text>
         <View style={styles.form}>
-          <TouchableOpacity style={styles.imageContainer} onPress={showImagePicker}>
+          <TouchableOpacity
+            style={styles.imageContainer}
+            onPress={showImagePicker}
+          >
             {avatar ? (
-              <Image source={avatar} style={styles.image} contentFit="cover" transition={200} />
+              <Image
+                source={avatar}
+                style={styles.image}
+                contentFit="cover"
+                transition={200}
+              />
             ) : (
               <View style={styles.imagePlaceholder}>
                 <Text style={styles.imagePlaceholderText}>+</Text>
