@@ -30,8 +30,10 @@ export default function RegisterScreen() {
       setLoading(true);
       await register(email, password);
       router.push("/(auth)/onboarding");
-    } catch (error) {
-      Alert.alert("Error", "Registration failed");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+      console.error("Registration error:", error);
+      router.push("/(auth)/login");
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export default function RegisterScreen() {
             {loading ? (
               <ActivityIndicator color="white" size={24} />
             ) : (
-              <Text>Register</Text>
+              <Text style={{color: "white", fontWeight: "bold"}}>Register</Text>
             )}
           </TouchableOpacity>
 

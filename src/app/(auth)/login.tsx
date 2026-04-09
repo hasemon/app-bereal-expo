@@ -1,10 +1,43 @@
+import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
-
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await login(email, password);
+      // router.replace will be handled by the layout or we can manually redirect
+      // but usually layout handles auth redirects.
+      // However, if we need to go to onboarding check:
+      // router.replace("/(tabs)"); // or wherever
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
@@ -18,6 +51,8 @@ export default function LoginScreen() {
             autoComplete="email"
             autoCapitalize="none"
             style={styles.input}
+            value={email}
+            onChangeText={setEmail}
           />
           <TextInput
             placeholder="Password"
@@ -25,14 +60,24 @@ export default function LoginScreen() {
             secureTextEntry
             autoCapitalize="none"
             style={styles.input}
+            value={password}
+            onChangeText={setPassword}
           />
-          <TouchableOpacity style={styles.button}>
-            <Text>Login</Text>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            {loading ? (
+              <ActivityIndicator color="white" size={24} />
+            ) : (
+              <Text style={{ color: "white", fontWeight: "bold" }}>Login</Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.linkButton}>
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => router.push("/(auth)/register")}
+          >
             <Text>
-              Don't have an account? <Text onPress={() => router.push("/(auth)/register")} style={styles.linkText}>Register</Text>
+              Don't have an account?{" "}
+              <Text style={styles.linkText}>Register</Text>
             </Text>
           </TouchableOpacity>
         </View>

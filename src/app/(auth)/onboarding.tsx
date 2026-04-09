@@ -17,14 +17,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OnboardingScreen() {
-  const { user, updateUser } = useAuth();
+  const { user, loading, updateUser } = useAuth();
+
+  console.log("User:", user);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="blue" />
+      </View>
+    );
+  }
 
   const handleImagePicker = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -83,23 +93,17 @@ export default function OnboardingScreen() {
       return;
     }
 
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
-      await supabase.from("profiles").update({
-        name,
-        username,
-        avatar,
-      });
-
       let avatarUrl: string | undefined;
 
       if (avatar) {
         try {
           avatarUrl = await uploadAvatar(user.id, avatar);
         } catch (error) {
-          Alert.alert("Error", "Profile creation failed");
           console.log("Error uploading avatar:", error);
+          // Don't block onboarding if avatar fails, but maybe warn?
         }
       }
 
@@ -107,16 +111,17 @@ export default function OnboardingScreen() {
         name,
         username,
         avatar: avatarUrl,
-        onboardingCompleted: true,
+        onboarding_completed: true,
       });
 
       router.replace("/(tabs)");
 
       Alert.alert("Success", "Profile created successfully");
-    } catch (error) {
-      Alert.alert("Error", "Profile creation failed");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Profile creation failed");
+      console.error("Onboarding error:", error);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -164,10 +169,10 @@ export default function OnboardingScreen() {
             onChangeText={setUsername}
           />
           <TouchableOpacity style={styles.button} onPress={handleOnboarding}>
-            {loading ? (
+            {isSubmitting ? (
               <ActivityIndicator color="white" size={24} />
             ) : (
-              <Text>Complete</Text>
+              <Text style={styles.buttonText}>Complete</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -179,6 +184,11 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
@@ -244,9 +254,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   button: {
-    backgroundColor: "blue",
-    borderRadius: 5,
-    padding: 10,
+    backgroundColor: "black",
+    borderRadius: 8,
+    padding: 16,
     alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });
