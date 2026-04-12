@@ -1,32 +1,32 @@
-import {Tabs} from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import {Ionicons} from "@expo/vector-icons";
 import React from "react";
+import {NativeTabs} from "expo-router/unstable-native-tabs";
 
 // Helper to reduce repetition in tab icon rendering
 const renderTabBarIcon = (focusedName: keyof typeof Ionicons.glyphMap, outlineName: keyof typeof Ionicons.glyphMap) =>
-  ({ color, size, focused }: { color: string; size: number; focused: boolean }) => (
-    <Ionicons
-      name={focused ? focusedName : outlineName}
-      size={size}
-      color={color}
-    />
-  );
+    ({color, size, focused}: { color: string; size: number; focused: boolean }) => (
+        <Ionicons
+            name={focused ? focusedName : outlineName}
+            size={size}
+            color={color}
+        />
+    );
 
 export default function TabLayout() {
-  return <Tabs screenOptions={{ tabBarActiveTintColor: "crimson" }}>
-    <Tabs.Screen
-        name="index"
-        options={{
-          title: "Home",
-          tabBarIcon: renderTabBarIcon("home", "home-outline"),
-        }}
-    />
-    <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: renderTabBarIcon("person", "person-outline"),
-        }}
-    />
-  </Tabs>;
+    return <NativeTabs
+
+    >
+        <NativeTabs.Trigger
+            name="index"
+        >
+            <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon sf={{default: 'house', selected: 'house.fill'}} md="home"/>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger
+            name="profile"
+        >
+            <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
+            <NativeTabs.Trigger.Icon sf={{default: 'person', selected: 'person.fill'}} md="person"/>
+        </NativeTabs.Trigger>
+    </NativeTabs>;
 }
