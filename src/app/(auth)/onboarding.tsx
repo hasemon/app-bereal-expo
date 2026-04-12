@@ -19,8 +19,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function OnboardingScreen() {
   const { user, loading, updateUser } = useAuth();
 
-  console.log("User:", user);
-
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -103,7 +101,6 @@ export default function OnboardingScreen() {
           avatarUrl = await uploadAvatar(user.id, avatar);
         } catch (error) {
           console.log("Error uploading avatar:", error);
-          // Don't block onboarding if avatar fails, but maybe warn?
         }
       }
 

@@ -28,12 +28,5 @@ export default function TabLayout() {
           tabBarIcon: renderTabBarIcon("person", "person-outline"),
         }}
     />
-    <Tabs.Screen
-        name="about"
-        options={{
-          title: "About",
-          tabBarIcon: renderTabBarIcon("information-circle", "information-circle-outline"),
-        }}
-    />
   </Tabs>;
 }

@@ -28,10 +28,6 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      // router.replace will be handled by the layout or we can manually redirect
-      // but usually layout handles auth redirects.
-      // However, if we need to go to onboarding check:
-      // router.replace("/(tabs)"); // or wherever
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {

@@ -37,8 +37,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq("id", userId)
         .single();
 
-      // If profile doesn't exist (e.g. fresh registration), we return basic info
-      // so onboarding can proceed.
       return {
         id: userId,
         name: profile?.name || "",
@@ -49,7 +47,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
     } catch (error) {
       if ((error as any).code === "PGRST116") {
-         // Profile doesn't exist yet, return partial user from auth
          const { data: { user: authUser } } = await supabase.auth.getUser();
          if (authUser) {
              return {
@@ -68,7 +65,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Initial session check
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -85,7 +81,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     initAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state change:", event, session?.user?.id);
       
@@ -112,7 +107,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) {
       throw error;
     }
-    // setUser will be called by the onAuthStateChange listener
   };
 
   const register = async (email: string, password: string) => {
@@ -126,8 +120,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     if (data.user) {
-        // We set a basic user state immediately so onboarding can start
-        // while the profile listener might still be fetching.
         setUser({
             id: data.user.id,
             email: data.user.email || "",
@@ -149,13 +141,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (userData.onboarding_completed !== undefined)
         updateData.onboarding_completed = userData.onboarding_completed;
 
+      // Explicitly ensure email is not sent to the profiles table
+      // as email is managed by auth.users and the profiles table doesn't have this column.
+      delete updateData.email;
+
+      const payload = {
+        id: user.id,
+        ...updateData,
+        updated_at: new Date().toISOString(),
+      };
+      
+      delete (payload as any).email; // One more explicit safety check
+
       const { error } = await supabase
         .from("profiles")
-        .upsert({
-          id: user.id,
-          ...updateData,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(payload);
 
       if (error) throw error;
 
