@@ -65,7 +65,7 @@ export const usePosts = () => {
                 console.error("Error fetching active posts:", error);
                 throw error;
             }
-            
+
             const postWithProfiles = data.map(post => ({
                 ...post,
                 profiles: post.profiles || null,
@@ -94,9 +94,9 @@ export const usePosts = () => {
             }
 
             // Deactivate any currently active post for this user before creating a new one
-            const { error: deactivateError } = await supabase
+            const {error: deactivateError} = await supabase
                 .from("posts")
-                .update({ is_active: false })
+                .update({is_active: false})
                 .eq("user_id", user.id)
                 .eq("is_active", true);
 
@@ -130,11 +130,18 @@ export const usePosts = () => {
     };
     const deletePost = () => {
     };
+
+    const refreshPosts = async () => {
+        await loadPosts();
+    }
+
+
     return {
         createPost,
         updatePost,
         deletePost,
         posts,
-        isLoading
+        isLoading,
+        refreshPosts: refreshPosts
     }
 }

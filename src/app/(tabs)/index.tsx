@@ -3,6 +3,7 @@ import {
     Alert,
     FlatList,
     Modal,
+    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
@@ -76,11 +77,14 @@ const PostCard = ({post, currentUserId}: PostCardProps) => {
 
 export default function Index() {
     const router = useRouter();
-    const {createPost, posts} = usePosts();
+    const {createPost, posts, refreshPosts} = usePosts();
     const [showPreview, setShowPreview] = useState<boolean>(false);
     const [previewImage, setPreviewImage] = useState<string | null>();
+    const [refreshing, setRefreshing] = useState<boolean>(false);
+
     const [description, setDescription] = useState<string>("");
     const [isUploading, setIsUploading] = useState<boolean>(false);
+
     const {user} = useAuth();
 
     const userActivePost = posts.find(post => post.user_id === user?.id && post.is_active && new Date(post.expires_at) > new Date());
@@ -158,6 +162,17 @@ export default function Index() {
         }
     }
 
+    const onRefresh = async () => {
+        setRefreshing(true);
+        try {
+            refreshPosts()
+        } catch (error) {
+            console.error("Refreshing failed", error)
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
     const showImagePicker = () => {
         Alert.alert("Select Image", "Choose an option", [
             {text: "Cancel", style: "cancel"},
@@ -169,7 +184,14 @@ export default function Index() {
     return (
         <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
 
-            <FlatList data={posts} renderItem={renderPosts}/>
+            <FlatList
+                data={posts}
+                renderItem={renderPosts}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={posts.length === 0 ? styles.emptyContent : styles.content}
+                ListEmptyComponent={<Text>No posts yet. Be the first to share!</Text>}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>}
+            />
 
             <TouchableOpacity style={styles.fab} onPress={showImagePicker}>
                 <Text style={styles.fabText}>{hasActivePost ? "↻" : "+"}</Text>
@@ -207,13 +229,13 @@ export default function Index() {
                                     Cancel
                                 </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[styles.modalButton, styles.postButton, isUploading && styles.disabledButton]}
                                 disabled={isUploading}
                                 onPress={handlePost}
                             >
                                 {isUploading ? (
-                                    <ActivityIndicator color="white" />
+                                    <ActivityIndicator color="white"/>
                                 ) : (
                                     <Text style={styles.postButtonText}>
                                         {hasActivePost ? "Replace" : "Post"}
@@ -264,6 +286,16 @@ const styles = StyleSheet.create({
         alignItems: "center",
         backgroundColor: "rgba(0, 0, 0, 0.5)",
         padding: 20,
+    },
+    content: {
+        padding: 16,
+        paddingBottom: 100
+    },
+    emptyContent: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 16,
     },
     modalContent: {
         backgroundColor: "white",
@@ -338,13 +370,12 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
         borderRadius: 16,
         overflow: "hidden",
-        marginVertical: 16,
+        marginVertical: 12,
         shadowColor: "#000",
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 3,
-        marginHorizontal: 10,
     },
     postHeader: {
         flexDirection: "row",
