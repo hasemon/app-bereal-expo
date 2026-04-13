@@ -16,6 +16,42 @@ import {Image} from "expo-image";
 import {PostType, usePosts} from "@/hooks/usePosts";
 import {useAuth} from "@/context/AuthContext";
 
+export interface PostCardProps {
+    post: PostType;
+    currentUserId?: string;
+}
+
+const PostCard = ({post, currentUserId}: PostCardProps) => {
+    const postUser = post.profiles;
+
+    return (
+        <View style={styles.postContainer}>
+            <View style={styles.postHeader}>
+                <View style={styles.userInfo}>
+                    {
+                        postUser?.avatar ? (
+                            <Image source={{uri: postUser.avatar}} style={styles.avatar}/>) : (
+                            <View style={styles.avatarPlaceholder}>
+                                <Text
+                                    style={styles.avatarText}>{postUser?.name?.charAt(0).toUpperCase() || "U"}
+                                </Text>
+                            </View>
+                        )
+                    }
+                </View>
+                <View style={styles.username}>
+                    <Text>{postUser?.name}</Text>
+                </View>
+                <View style={styles.timeAgo}>
+                    <Text>{post.created_at}</Text>
+                </View>
+
+            </View>
+        </View>
+    );
+}
+
+
 export default function Index() {
     const router = useRouter();
     const {createPost, posts} = usePosts();
@@ -27,7 +63,7 @@ export default function Index() {
 
 
     const renderPosts = ({item}: { item: PostType }) => (
-        <PostCard post={item} currentUserId={user.id}/>
+        <PostCard post={item} currentUserId={user?.id}/>
     );
 
 
@@ -258,4 +294,18 @@ const styles = StyleSheet.create({
         color: "#333",
         fontWeight: "bold",
     },
+    postContainer: {},
+    postHeader: {},
+    userInfo: {},
+    avatar: {},
+    avatarPlaceholder: {},
+    avatarText: {},
+    username: {},
+    timeAgo: {},
+    timeRemainingBadge: {},
+    timeRemainingText: {},
+    postImage: {},
+    postFooter: {},
+    postDescription: {},
+    postInfo: {}
 });
