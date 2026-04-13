@@ -1,17 +1,34 @@
-import {Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View} from "react-native";
+import {
+    Alert,
+    FlatList,
+    Modal,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from "react-native";
 import {useRouter} from "expo-router";
 import {SafeAreaView} from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import {useState} from "react";
 import {Image} from "expo-image";
-import {usePosts} from "@/hooks/usePosts";
+import {PostType, usePosts} from "@/hooks/usePosts";
+import {useAuth} from "@/context/AuthContext";
 
 export default function Index() {
     const router = useRouter();
-    const {createPost} = usePosts();
+    const {createPost, posts} = usePosts();
     const [showPreview, setShowPreview] = useState<boolean>(false);
     const [previewImage, setPreviewImage] = useState<string | null>();
     const [description, setDescription] = useState<string>("");
+    const [isUploading, setIsUploading] = useState<boolean>(false);
+    const {user} = useAuth();
+
+
+    const renderPosts = ({item}: { item: PostType }) => (
+        <PostCard post={item} currentUserId={user.id}/>
+    );
 
 
     const handleImagePicker = async () => {
@@ -58,7 +75,7 @@ export default function Index() {
 
     const handlePost = async () => {
         if (!previewImage) return;
-
+        setIsUploading(true)
         try {
             await createPost(previewImage, description)
             setPreviewImage(null);
@@ -74,6 +91,8 @@ export default function Index() {
                 "Error",
                 "Failed to post image. Please try again later."
             )
+        } finally {
+            setIsUploading(false)
         }
     }
 
@@ -87,6 +106,9 @@ export default function Index() {
 
     return (
         <SafeAreaView edges={["top", "bottom"]} style={styles.container}>
+
+            <FlatList data={posts} renderItem={renderPosts}/>
+
             <TouchableOpacity style={styles.fab} onPress={showImagePicker}>
                 <Text style={styles.fabText}>+</Text>
             </TouchableOpacity>
