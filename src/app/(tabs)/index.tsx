@@ -1,4 +1,5 @@
 import {
+    ActivityIndicator,
     Alert,
     FlatList,
     Modal,
@@ -15,6 +16,7 @@ import {useState} from "react";
 import {Image} from "expo-image";
 import {PostType, usePosts} from "@/hooks/usePosts";
 import {useAuth} from "@/context/AuthContext";
+import {formatTimeAgo, formatTimeRemaining} from "@/lib/date-helper";
 
 export interface PostCardProps {
     post: PostType;
@@ -23,6 +25,7 @@ export interface PostCardProps {
 
 const PostCard = ({post, currentUserId}: PostCardProps) => {
     const postUser = post.profiles;
+    const isOwnPost = post.user_id === currentUserId;
 
     return (
         <View style={styles.postContainer}>
@@ -38,15 +41,34 @@ const PostCard = ({post, currentUserId}: PostCardProps) => {
                             </View>
                         )
                     }
+                    <View>
+                        <Text
+                            style={styles.username}>{isOwnPost ? "You" : `@${postUser?.name}`}</Text>
+                        <Text style={styles.timeAgo}>{formatTimeAgo(post.created_at)}</Text>
+                    </View>
                 </View>
-                <View style={styles.username}>
-                    <Text>{postUser?.name}</Text>
+                <View style={styles.timeRemainingBadge}>
+                    <Text style={styles.timeRemainingText}>
+                        {formatTimeRemaining(post.expires_at)}
+                    </Text>
                 </View>
-                <View style={styles.timeAgo}>
-                    <Text>{post.created_at}</Text>
-                </View>
-
             </View>
+            <Image
+                source={{uri: post.image_url}}
+                style={styles.postImage}
+                contentFit={"cover"}
+            />
+            <View style={styles.postFooter}>
+                {post.description &&
+                    <Text style={styles.postDescription}>{post.description}</Text>
+                }
+                <Text style={styles.postInfo}>
+                    {
+                        isOwnPost ? `Your post • Expires in ${formatTimeRemaining(post.expires_at)}` : `${postUser?.name}'s post • Expires in ${formatTimeRemaining(post.expires_at)}`
+                    }
+                </Text>
+            </View>
+
         </View>
     );
 }
@@ -60,6 +82,10 @@ export default function Index() {
     const [description, setDescription] = useState<string>("");
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const {user} = useAuth();
+
+    const userActivePost = posts.find(post => post.user_id === user?.id && post.is_active && new Date(post.expires_at) > new Date());
+
+    const hasActivePost = !!userActivePost;
 
 
     const renderPosts = ({item}: { item: PostType }) => (
@@ -146,13 +172,13 @@ export default function Index() {
             <FlatList data={posts} renderItem={renderPosts}/>
 
             <TouchableOpacity style={styles.fab} onPress={showImagePicker}>
-                <Text style={styles.fabText}>+</Text>
+                <Text style={styles.fabText}>{hasActivePost ? "↻" : "+"}</Text>
             </TouchableOpacity>
             <Modal visible={showPreview} transparent animationType={"fade"}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
                         <Text style={styles.modalTitle}>
-                            Preview your post here
+                            {hasActivePost ? "Replace your post" : "Preview your post here"}
                         </Text>
                         {previewImage &&
                             <Image style={styles.previewImage} source={{uri: previewImage}}
@@ -167,9 +193,11 @@ export default function Index() {
                             numberOfLines={4}
                             maxLength={500}
                             textAlignVertical={"top"}
+                            editable={!isUploading}
                         />
                         <View style={styles.modalButtons}>
                             <TouchableOpacity style={[styles.modalButton, styles.cancelButton]}
+                                              disabled={isUploading}
                                               onPress={() => {
                                                   setShowPreview(false);
                                                   setPreviewImage(null);
@@ -179,10 +207,18 @@ export default function Index() {
                                     Cancel
                                 </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalButton, styles.postButton]}>
-                                <Text style={styles.postButtonText} onPress={handlePost}>
-                                    Post
-                                </Text>
+                            <TouchableOpacity 
+                                style={[styles.modalButton, styles.postButton, isUploading && styles.disabledButton]}
+                                disabled={isUploading}
+                                onPress={handlePost}
+                            >
+                                {isUploading ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text style={styles.postButtonText}>
+                                        {hasActivePost ? "Replace" : "Post"}
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -279,9 +315,13 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         alignItems: "center",
+        justifyContent: "center",
     },
     postButton: {
         backgroundColor: "#5067FF",
+    },
+    disabledButton: {
+        opacity: 0.7,
     },
     postButtonText: {
         color: "white",
@@ -294,18 +334,85 @@ const styles = StyleSheet.create({
         color: "#333",
         fontWeight: "bold",
     },
-    postContainer: {},
-    postHeader: {},
-    userInfo: {},
-    avatar: {},
-    avatarPlaceholder: {},
-    avatarText: {},
-    username: {},
-    timeAgo: {},
-    timeRemainingBadge: {},
-    timeRemainingText: {},
-    postImage: {},
-    postFooter: {},
-    postDescription: {},
-    postInfo: {}
+    postContainer: {
+        backgroundColor: "#fff",
+        borderRadius: 16,
+        overflow: "hidden",
+        marginVertical: 16,
+        shadowColor: "#000",
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 3,
+        marginHorizontal: 10,
+    },
+    postHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: 16,
+    },
+    userInfo: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12
+    },
+    avatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        overflow: "hidden"
+    },
+    avatarPlaceholder: {
+        backgroundColor: "#ffffff",
+        justifyContent: "center",
+        alignItems: "center",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 12
+    },
+    avatarText: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#666"
+    },
+    username: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#000"
+    },
+    timeAgo: {
+        fontSize: 12,
+        color: "#888"
+    },
+    timeRemainingBadge: {
+        backgroundColor: "#000",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12
+    },
+    timeRemainingText: {
+        color: "#fff",
+        fontSize: 12,
+        fontWeight: "600"
+    },
+    postImage: {
+        width: "100%",
+        aspectRatio: 1,
+    },
+    postFooter: {
+        padding: 16
+    },
+    postDescription: {
+        fontSize: 15,
+        color: "#000",
+        marginBottom: 8,
+        lineHeight: 20
+    },
+    postInfo: {
+        fontSize: 12,
+        color: "#888",
+        marginBottom: 16
+    }
 });
