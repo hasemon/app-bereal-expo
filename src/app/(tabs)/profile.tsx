@@ -1,17 +1,74 @@
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
+import {Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from "react-native";
 import {SafeAreaView} from "react-native-safe-area-context";
 import {useAuth} from "@/context/AuthContext";
 import {Image} from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import {uploadAvatar} from "@/lib/supabase/storage";
+import {useState} from "react";
+import {useRouter} from "expo-router";
 
 export default function Profile() {
-    const {user} = useAuth();
+    const {user, updateUser, logout} = useAuth();
+    const router = useRouter();
+
+    const [isUpdating, setIsUpdating] = useState<boolean>(false);
+
+    const handleUpdateProfileImage = async () => {
+        if (!user) return;
+        const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            alert("Sorry, we need camera roll permissions to make this work!");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setIsUpdating(true);
+            try {
+                const imageUrl = await uploadAvatar(user?.id, result.assets[0].uri)
+                await updateUser({avatar: imageUrl});
+                Alert.alert("Success", "Profile image updated")
+            } catch (error) {
+                console.error("Error updating profile image", error)
+                Alert.alert("Error", "Error updating profile image")
+            } finally {
+                setIsUpdating(false);
+            }
+        }
+    }
+
+    const handleLogout = async () => {
+        Alert.alert("Log out", "Are you sure to log out ?", [
+            {
+                text: "Cancel",
+                style: "cancel"
+            },
+            {
+                text: "Log out",
+                style: "destructive",
+                onPress: async () => {
+                    await logout()
+                    router.replace("/(auth)/login")
+                }
+            }
+        ])
+        await logout();
+    }
+
     return (
         <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.profileSection}>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={handleUpdateProfileImage} disabled={isUpdating}>
                         {user?.avatar ? (
-                            <Image source={{uri: user.avatar}} style={styles.profileImage}/>) : (
+                            <Image source={{uri: user.avatar}} style={styles.profileImage}
+                                   cachePolicy={"none"}/>) : (
                             <View style={styles.profileImagePlaceholder}>
                                 <Text style={styles.profileImageText}>
                                     {user?.name?.charAt(0).toUpperCase() || "U"}
@@ -67,7 +124,7 @@ export default function Profile() {
                 <View style={styles.section}>
                     <TouchableOpacity
                         style={[styles.settingItem, styles.signOutButton]}
-                        // onPress={handleSignOut}
+                        onPress={handleLogout}
                     >
                         <Text style={styles.signOutText}>Sign Out</Text>
                     </TouchableOpacity>
@@ -155,32 +212,33 @@ const styles = StyleSheet.create({
         backgroundColor: "#f9f9f9",
         borderRadius: 12,
         marginBottom: 8,
+        borderWidth: 1,
+        borderColor: "#999"
     },
     settingLabel: {
         fontSize: 18,
-        color: "#999",
+        color: "#000",
     },
     settingValue: {
         fontSize: 18,
-        color: "#999",
+        color: "#000",
     },
     signOutButton: {
-        backgroundColor: "#f5f5f5",
+        borderWidth: 1,
+        borderColor: "#ff3b30",
         marginBottom: 8,
     },
     signOutText: {
         fontSize: 16,
-        color: "#000",
+        color: "#ff3b30",
         fontWeight: "500",
     },
     deleteButton: {
-        backgroundColor: "#fff",
-        borderWidth: 1,
-        borderColor: "#ff3b30",
+        backgroundColor: "#ff3b30",
     },
     deleteText: {
         fontSize: 16,
-        color: "#ff3b30",
+        color: "#fff",
         fontWeight: "500",
     },
 });

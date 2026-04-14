@@ -19,7 +19,7 @@ export const uploadAvatar = async (userId: string, imageUri: string) => {
         }
 
         const {data: urlData} = supabase.storage.from("profiles").getPublicUrl(fileName);
-        return urlData.publicUrl;
+        return `${urlData.publicUrl}?t=${Date.now()}`;
 
     } catch (error) {
         console.log(error);
@@ -48,7 +48,7 @@ export const uploadPostImage = async (userId: string, imageUri: string) => {
         }
 
         const {data: urlData} = supabase.storage.from("posts").getPublicUrl(fileName);
-        return urlData.publicUrl;
+        return `${urlData.publicUrl}?t=${Date.now()}`;
 
     } catch (error) {
         console.log(error);

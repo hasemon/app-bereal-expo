@@ -34,7 +34,8 @@ const PostCard = ({post, currentUserId}: PostCardProps) => {
                 <View style={styles.userInfo}>
                     {
                         postUser?.avatar ? (
-                            <Image source={{uri: postUser.avatar}} style={styles.avatar}/>) : (
+                            <Image source={{uri: postUser.avatar}} style={styles.avatar}
+                                   cachePolicy={"none"}/>) : (
                             <View style={styles.avatarPlaceholder}>
                                 <Text
                                     style={styles.avatarText}>{postUser?.name?.charAt(0).toUpperCase() || "U"}
@@ -58,6 +59,7 @@ const PostCard = ({post, currentUserId}: PostCardProps) => {
                 source={{uri: post.image_url}}
                 style={styles.postImage}
                 contentFit={"cover"}
+                cachePolicy={"none"}
             />
             <View style={styles.postFooter}>
                 {post.description &&
@@ -204,7 +206,7 @@ export default function Index() {
                         </Text>
                         {previewImage &&
                             <Image style={styles.previewImage} source={{uri: previewImage}}
-                                   contentFit={"cover"}/>}
+                                   contentFit={"cover"} cachePolicy={"none"}/>}
                         <TextInput
                             style={styles.descriptionInput}
                             placeholder={"Add a description (Optional)"}
